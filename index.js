@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
@@ -14,14 +14,56 @@ app.use(express.json());
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.e3n1sso.mongodb.net/?retryWrites=true&w=majority`;
-console.log(uri);
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
-client.connect(err => {
-    const collection = client.db("test").collection("devices");
-    // perform actions on the collection object
-    client.close();
-});
 
+
+async function run() {
+    try {
+        const serviceCollection = client.db('travelax').collection('services');
+        const reviewCollection = client.db('travelax').collection('reviews');
+
+        // get 3 or all services
+        app.get('/services', async (req, res) => {
+            const count = parseInt(req.query.count);
+            const query = {}
+            const cursor = serviceCollection.find(query);
+
+            if (count) {
+                const services = await cursor.limit(3).toArray();
+                // const services = servicesNotReversed.reverse().limit(3);
+                res.send(services)
+            }
+            else {
+                const services = await cursor.toArray();
+                res.send(services)
+            }
+        })
+
+        // read specific service data according to _id
+        app.get('/services/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const service = await serviceCollection.findOne(query);
+            res.send(service);
+        })
+
+
+        //  create reviews api [get data of reviews from site and send it to mongodb]
+        app.post('/reviews', async (req, res) => {
+            const review = req.body;
+            console.log(review);
+            const result = await reviewCollection.insertOne(review);
+            res.send(result);
+        })
+
+    }
+
+    finally {
+
+    }
+}
+
+run().catch(err => console.error(err));
 
 // -------------------------------------------
 app.get('/', (req, res) => {

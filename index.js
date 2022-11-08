@@ -48,6 +48,16 @@ async function run() {
         })
 
 
+        // get all reviews first then get reviews of a single service [must edit later]
+        app.get('/reviews', async (req, res) => {
+            const title = req.query.title;
+            const query = { serviceName: title }
+            const cursor = reviewCollection.find(query)
+            const reviews = await cursor.toArray();
+            res.send(reviews)
+        })
+
+
         //  create reviews api [get data of reviews from site and send it to mongodb]
         app.post('/reviews', async (req, res) => {
             const review = req.body;

@@ -48,14 +48,38 @@ async function run() {
         })
 
 
-        // get all reviews first then get reviews of a single service [must edit later]
+        // get all reviews of a single "service" & get all reviews of a single "user"
         app.get('/reviews', async (req, res) => {
             const title = req.query.title;
-            const query = { serviceName: title }
-            const cursor = reviewCollection.find(query)
-            const reviews = await cursor.toArray();
-            res.send(reviews)
+            const email = req.query.email;
+            // console.log(email);
+
+            const queryOne = { serviceName: title }
+            const queryTwo = { email: email }
+
+            const cursorOne = reviewCollection.find(queryOne)
+            const cursorTwo = reviewCollection.find(queryTwo)
+
+            if (title) {
+                const reviews = await cursorOne.toArray();
+                res.send(reviews);
+            }
+
+            if (email) {
+                const reviews = await cursorTwo.toArray();
+                res.send(reviews);
+            }
         })
+
+        // get all reviews of a single "user"
+        // app.get('/reviews', async (req, res) => {
+        //     const email = req.query.email;
+        //     console.log(email);
+        //     const query = { email: email }
+        //     const cursor = reviewCollection.find(query)
+        //     const reviews = await cursor.toArray();
+        //     res.send(reviews);
+        // })
 
 
         //  create reviews api [get data of reviews from site and send it to mongodb]
@@ -63,6 +87,14 @@ async function run() {
             const review = req.body;
             console.log(review);
             const result = await reviewCollection.insertOne(review);
+            res.send(result);
+        })
+
+        // delete review
+        app.delete('/reviews/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await reviewCollection.deleteOne(query);
             res.send(result);
         })
 
@@ -74,6 +106,7 @@ async function run() {
 }
 
 run().catch(err => console.error(err));
+
 
 // -------------------------------------------
 app.get('/', (req, res) => {

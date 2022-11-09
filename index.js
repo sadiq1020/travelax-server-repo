@@ -83,10 +83,27 @@ async function run() {
         //  create reviews api [get data of reviews from site and send it to mongodb]
         app.post('/reviews', async (req, res) => {
             const review = req.body;
-            console.log(review);
+            // console.log(review);
             const result = await reviewCollection.insertOne(review);
             res.send(result);
         })
+
+        // // update review
+        app.patch('/reviews/:id', async (req, res) => {
+            const id = req.params.id;
+            const message = req.body;
+            console.log(message, id);
+            const query = { _id: ObjectId(id) };
+
+            const updatedDoc = {
+                $set: {
+                    reviewMessage: message.reviewMessage
+                }
+            }
+            const result = await reviewCollection.updateOne(query, updatedDoc);
+            res.send(result);
+        })
+
 
         // delete review
         app.delete('/reviews/:id', async (req, res) => {
@@ -95,7 +112,6 @@ async function run() {
             const result = await reviewCollection.deleteOne(query);
             res.send(result);
         })
-
     }
 
     finally {

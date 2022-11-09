@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const app = express();
@@ -16,11 +17,36 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.e3n1sso.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+// verify JWT token
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: 'Unauthorized Access' })
+    }
+
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+        if (err) {
+            return res.status(401).send({ message: 'Unauthorized Access' })
+        }
+        req.decoded = decoded;
+        next();
+    })
+}
+
 
 async function run() {
     try {
         const serviceCollection = client.db('travelax').collection('services');
         const reviewCollection = client.db('travelax').collection('reviews');
+
+        // jwt token
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            console.log(user);
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1hr' })
+            res.send({ token })
+        })
 
         // get 3 or all services
         app.get('/services', async (req, res) => {
@@ -58,7 +84,11 @@ async function run() {
 
 
         // get all reviews of a single "service" & get all reviews of a single "user"
-        app.get('/reviews', async (req, res) => {
+        app.get('/reviews', verifyJWT, async (req, res) => {
+
+            const decoded = req.decoded;
+            console.log(decoded);
+
             const title = req.query.title;
             const email = req.query.email;
             // console.log(email);
@@ -75,6 +105,9 @@ async function run() {
             }
 
             if (email) {
+                if (decoded.email !== email) {
+                    res.status(403).send({ message: 'Unauthorized Access' })
+                }
                 const reviews = await cursorTwo.toArray();
                 res.send(reviews);
             }

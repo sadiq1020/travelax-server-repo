@@ -39,6 +39,15 @@ async function run() {
             }
         })
 
+        // add new service
+        app.post('/services', async (req, res) => {
+            const service = req.body;
+            console.log(service);
+            const result = await serviceCollection.insertOne(service);
+            res.send(result);
+        })
+
+
         // read specific service data according to _id
         app.get('/services/:id', async (req, res) => {
             const id = req.params.id;
@@ -70,17 +79,6 @@ async function run() {
                 res.send(reviews);
             }
         })
-
-        // get all reviews of a single "user"
-        // app.get('/reviews', async (req, res) => {
-        //     const email = req.query.email;
-        //     console.log(email);
-        //     const query = { email: email }
-        //     const cursor = reviewCollection.find(query)
-        //     const reviews = await cursor.toArray();
-        //     res.send(reviews);
-        // })
-
 
         //  create reviews api [get data of reviews from site and send it to mongodb]
         app.post('/reviews', async (req, res) => {

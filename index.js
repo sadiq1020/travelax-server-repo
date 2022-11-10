@@ -18,21 +18,21 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@clu
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 // verify JWT token
-function verifyJWT(req, res, next) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        return res.status(401).send({ message: 'Unauthorized Access' })
-    }
+// function verifyJWT(req, res, next) {
+//     const authHeader = req.headers.authorization;
+//     if (!authHeader) {
+//         return res.status(401).send({ message: 'Unauthorized Access' })
+//     }
 
-    const token = authHeader.split(' ')[1];
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
-        if (err) {
-            return res.status(401).send({ message: 'Unauthorized Access' })
-        }
-        req.decoded = decoded;
-        next();
-    })
-}
+//     const token = authHeader.split(' ')[1];
+//     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+//         if (err) {
+//             return res.status(401).send({ message: 'Unauthorized Access' })
+//         }
+//         req.decoded = decoded;
+//         next();
+//     })
+// }
 
 
 async function run() {
@@ -52,7 +52,7 @@ async function run() {
         app.get('/services', async (req, res) => {
             const count = parseInt(req.query.count);
             const query = {}
-            const cursor = serviceCollection.find(query);
+            const cursor = serviceCollection.find(query).sort({ date: -1 });
 
             if (count) {
                 const services = await cursor.limit(3).toArray();
@@ -68,6 +68,7 @@ async function run() {
         // add new service
         app.post('/services', async (req, res) => {
             const service = req.body;
+            service.date = (Date.now());
             console.log(service);
             const result = await serviceCollection.insertOne(service);
             res.send(result);
@@ -84,10 +85,11 @@ async function run() {
 
 
         // get all reviews of a single "service" & get all reviews of a single "user"
-        app.get('/reviews', verifyJWT, async (req, res) => {
+        app.get('/reviews', async (req, res) => {
+            const authHeader = req.headers.authorization;
 
-            const decoded = req.decoded;
-            console.log(decoded);
+            // const decoded = req.decoded;
+            // console.log(decoded);
 
             const title = req.query.title;
             const email = req.query.email;
@@ -96,7 +98,7 @@ async function run() {
             const queryOne = { serviceName: title }
             const queryTwo = { email: email }
 
-            const cursorOne = reviewCollection.find(queryOne)
+            const cursorOne = reviewCollection.find(queryOne).sort({ date: -1 })
             const cursorTwo = reviewCollection.find(queryTwo)
 
             if (title) {
@@ -105,9 +107,27 @@ async function run() {
             }
 
             if (email) {
-                if (decoded.email !== email) {
-                    res.status(403).send({ message: 'Unauthorized Access' })
+
+                // jwt token for myService
+                if (!authHeader) {
+                    return res.status(401).send({ message: 'Unauthorized Access' })
                 }
+
+                const token = authHeader.split(' ')[1];
+
+                jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+                    if (err) {
+                        return res.status(401).send({ message: 'Unauthorized Access' })
+                    }
+                    req.decoded = decoded;
+                    // next();
+                })
+
+                // const decoded = req.decoded;
+
+                // if (decoded.email !== email) {
+                //     res.status(403).send({ message: 'Unauthorized Access' })
+                // }
                 const reviews = await cursorTwo.toArray();
                 res.send(reviews);
             }
@@ -116,12 +136,13 @@ async function run() {
         //  create reviews api [get data of reviews from site and send it to mongodb]
         app.post('/reviews', async (req, res) => {
             const review = req.body;
+            review.date = (Date.now());
             // console.log(review);
             const result = await reviewCollection.insertOne(review);
             res.send(result);
         })
 
-        // // update review
+        // update review
         app.patch('/reviews/:id', async (req, res) => {
             const id = req.params.id;
             const message = req.body;

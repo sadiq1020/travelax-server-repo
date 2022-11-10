@@ -17,23 +17,6 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.e3n1sso.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
-// verify JWT token
-// function verifyJWT(req, res, next) {
-//     const authHeader = req.headers.authorization;
-//     if (!authHeader) {
-//         return res.status(401).send({ message: 'Unauthorized Access' })
-//     }
-
-//     const token = authHeader.split(' ')[1];
-//     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
-//         if (err) {
-//             return res.status(401).send({ message: 'Unauthorized Access' })
-//         }
-//         req.decoded = decoded;
-//         next();
-//     })
-// }
-
 
 async function run() {
     try {
@@ -87,9 +70,6 @@ async function run() {
         app.get('/reviews', async (req, res) => {
             const authHeader = req.headers.authorization;
 
-            // const decoded = req.decoded;
-            // console.log(decoded);
-
             const title = req.query.title;
             const email = req.query.email;
 
@@ -122,11 +102,6 @@ async function run() {
                     // next();
                 })
 
-                // const decoded = req.decoded;
-
-                // if (decoded.email !== email) {
-                //     res.status(403).send({ message: 'Unauthorized Access' })
-                // }
                 const reviews = await cursorTwo.toArray();
                 res.send(reviews);
             }
@@ -156,7 +131,6 @@ async function run() {
             const result = await reviewCollection.updateOne(query, updatedDoc);
             res.send(result);
         })
-
 
         // delete review
         app.delete('/reviews/:id', async (req, res) => {

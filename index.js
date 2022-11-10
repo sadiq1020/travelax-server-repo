@@ -56,7 +56,6 @@ async function run() {
 
             if (count) {
                 const services = await cursor.limit(3).toArray();
-                // const services = servicesNotReversed.reverse().limit(3);
                 res.send(services)
             }
             else {
@@ -93,7 +92,7 @@ async function run() {
 
             const title = req.query.title;
             const email = req.query.email;
-            // console.log(email);
+
 
             const queryOne = { serviceName: title }
             const queryTwo = { email: email }
@@ -137,7 +136,7 @@ async function run() {
         app.post('/reviews', async (req, res) => {
             const review = req.body;
             review.date = (Date.now());
-            // console.log(review);
+
             const result = await reviewCollection.insertOne(review);
             res.send(result);
         })
